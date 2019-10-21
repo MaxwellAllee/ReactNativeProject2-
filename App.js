@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
+  Text,
   Button,
   FlatList,
- ImageBackground,
- AsyncStorage
+  ImageBackground,
+  AsyncStorage
 } from 'react-native';
 
 import GoalItem from './components/GoalItem';
@@ -14,29 +15,48 @@ import GoalInput from './components/GoalInput';
 export default function App() {
   const [courseGoals, setCourseGoals] = useState([]);
   const [modalState, setModalState] = useState(false)
+  const [editing, setEditing] = useState(false)
   useEffect(() => {
     console.log('loaded')
-    AsyncStorage.getItem('ToDo', (err, result) => {
-      if (result === null){
-        
-      }
-    });
+    if (!editing) {
+      AsyncStorage.getItem('todo', (err, result) => {
+        if (result && !courseGoals.length && result !== '{"todo":[]}') {
+          console.log(result, courseGoals, 'made it in')
+          setCourseGoals(JSON.parse(result).todo.map(goalz => { return { id: Math.random().toString(), value: goalz } }))
+          setEditing(true)
+        }
+        else if (!result) AsyncStorage.setItem('todo', JSON.stringify({ todo: [] }), (err, rez) => {
+          if (err) throw err
+          setEditing(true)
+        })
+      });
+    }
   });
+
+  const clearIt = () => {
+    AsyncStorage.clear().then(() => console.log('Cleared'))
+    setCourseGoals([])
+  }
   const addGoalHandler = goal => {
     console.log('running')
-    // setCourseGoals(currentGoals => [
-    //   ...currentGoals,
-    //   { id: Math.random().toString(), value: goal }])
+
     setModalState(false)
     console.log(courseGoals)
-    AsyncStorage.setItem('UID123', JSON.stringify({'test':'1'}), () => {
-      AsyncStorage.mergeItem('UID123', JSON.stringify({'todo':goal}), () => {
-        AsyncStorage.getItem('UID123', (err, result) => {
-          console.log(result);
-          // setCourseGoals(result)
+    AsyncStorage.getItem('todo', (err, result) => {
+      let holder = JSON.parse(result)
+      holder.todo.push(goal)
+      console.log(holder)
+      AsyncStorage.mergeItem('todo', JSON.stringify(holder), (err) => {
+        if (err) console.log('erorr eroor', err)
+        AsyncStorage.getItem('todo', (err, res) => {
+          console.log(res);
+          setCourseGoals(currentGoals => [
+            ...currentGoals,
+            { id: Math.random().toString(), value: goal }])
         });
       });
-    });
+
+    })
   }
   const cancel = () => {
     setModalState(false)
@@ -55,6 +75,7 @@ export default function App() {
         data={courseGoals}
         renderItem={itemData => <GoalItem onDelete={onDelete} id={itemData.item.id} title={itemData.item.value} />}
       />
+      <Button title='clear' onPress={clearIt} />
     </ImageBackground>
   );
 }
