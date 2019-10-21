@@ -48,12 +48,13 @@ export default function App() {
       console.log(holder)
       AsyncStorage.mergeItem('todo', JSON.stringify(holder), (err) => {
         if (err) console.log('erorr eroor', err)
-        AsyncStorage.getItem('todo', (err, res) => {
+        else{
+
           console.log(res);
           setCourseGoals(currentGoals => [
             ...currentGoals,
             { id: Math.random().toString(), value: goal }])
-        });
+      }
       });
 
     })
@@ -62,8 +63,21 @@ export default function App() {
     setModalState(false)
   }
   const onDelete = (toDelete) => {
-    setCourseGoals(currentGoals => {
-      return currentGoals.filter((goal) => goal.id !== toDelete)
+    AsyncStorage.getItem('todo', (err, result) => {
+      let holder = JSON.parse(result)
+      holder.todo.push(goal)
+      console.log(holder)
+      AsyncStorage.mergeItem('todo', JSON.stringify(holder), (err) => {
+        if (err) throw err
+        else {
+          AsyncStorage.getItem('todo', (err, res) => {
+            console.log(res);
+            setCourseGoals(currentGoals => {
+              return currentGoals.filter((goal) => goal.id !== toDelete)
+            })
+          });
+        }
+      });
     })
   }
   return (
