@@ -1,52 +1,55 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View,
-  Button,
-  FlatList 
-} from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import * as Font from 'expo-font';
+import {AppLoading} from 'expo'
+import Header from './components/Header';
+import StartGameScreen from './screens/StartGameScreen';
+import GameScreen from './screens/GameScreen'
+import GameOver from './screens/GameOver'
+import colors from './constants/colors';
 
-import GoalItem from './components/GoalItem';
-import GoalInput from './components/GoalInput';
+const  theFonts = ()=> Font.loadAsync({
+  'open-sans': require('./assets/fonts/OpenSans-Regular.ttf'),
+  'open-sans-bold': require('./assets/fonts/OpenSans-Bold.ttf'),
+  'lemonada': require('./assets/fonts/Lemonada.ttf'),
+  'perm': require('./assets/fonts/perm.ttf')
+})
 
 export default function App() {
-  const [courseGoals, setCourseGoals] = useState([]);
-  const [modalState, setModalState] = useState(false)
-  const addGoalHandler = goal => {
-    console.log('running')
+  const [userNumber, setUserNumber] = useState()
+  const [rounds, setRounds] = useState(0)
+  const [loaded, setLoaded] = useState(false)
 
-    setCourseGoals(currentGoals => [
-      ...currentGoals, 
-      { id: Math.random().toString(), value: goal }])
-      setModalState(false)
+  if(!loaded){
+    return <AppLoading startAsync={theFonts} onFinish={()=>setLoaded(true)} onError={err=> console.log(err)}
+     />
   }
-  const cancel = ()=>{
-    setModalState(false)
+
+  const configNewGameHandler = () => {
+    setRounds(0)
+    setUserNumber(null)
   }
-  const onDelete =(toDelete)=>{
-    setCourseGoals(currentGoals=>{
-      return currentGoals.filter((goal)=> goal.id !== toDelete)
-    })
+  const StartGameHandler = theirNum => {
+    setUserNumber(theirNum)
+    setRounds(0)
   }
+  const RoundsHandler = numRounds => {
+    setRounds(numRounds)
+  }
+  let content = <StartGameScreen pageSwitch={StartGameHandler} />
+
+  if (userNumber && rounds <= 0) content = <GameScreen userChoice={userNumber} pageSwitch={RoundsHandler} />
+  else if (rounds) content = <GameOver numberOfRounds={rounds} restart={configNewGameHandler} userGuess={userNumber} />
   return (
-    <View style={style.screen}>
-      <Button title="Add New Goal" onPress={()=>setModalState(true)}/>
-      <GoalInput add={addGoalHandler} cancel={cancel} modalState={modalState}  />
-      <FlatList
-        keyExtractor={(item, index) => item.id}
-        data={courseGoals}
-        renderItem={itemData => <GoalItem onDelete={onDelete} id={itemData.item.id} title={itemData.item.value} />}
-        />
+    <View style={styles.screen}>
+      <Header  title="Guess a Number" />
+      {content}
     </View>
   );
 }
 
-const style = StyleSheet.create({
+const styles = StyleSheet.create({
   screen: {
-    flex: 1,
-    backgroundColor: 'purple',
-    padding: 30,
-    paddingTop: 50
-  },
-})
-
+    flex: 1
+  }
+});
